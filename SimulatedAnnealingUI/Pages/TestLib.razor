@@ -11,7 +11,14 @@
 <h2>Weight</h2>
 <p>@_myLink.weight</p>
 
+<p>Current Count: @_count</p>
+<button class="btn btn-primary" @onclick="toggleCount">@_stop</button>
+
 @code {
+
+    private int _count = 0;
+    private bool _stop = false;
+    
     private Link _myLink = new Link(
         start: new Position(lat: 35.2271, lon: 80.8431),
         end: new Position(lat: 41.8781, lon: 87.6298)
@@ -20,5 +27,21 @@
     protected override void OnInitialized()
     {
         _myLink.calculateWeight();
+        _ = incrementAsync();
+    }
+
+    private void toggleCount()
+    {
+        _stop = true;
+    }
+
+    private async Task incrementAsync()
+    {
+        while (!_stop)
+        {
+            _count++;
+            base.StateHasChanged();
+            await Task.Delay(500);
+        }
     }
 }
