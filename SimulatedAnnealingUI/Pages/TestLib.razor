@@ -1,0 +1,24 @@
+﻿@page "/testlib"
+
+<h1>Test Mason Library</h1>
+
+<h2>Charlotte</h2>
+<p>Lat: @_myLink.start.lat, Lon: @_myLink.start.lon</p>
+
+<h2>Chicago</h2>
+<p>Lat: @_myLink.end.lat, Lon: @_myLink.end.lon</p>
+
+<h2>Weight</h2>
+<p>@_myLink.weight</p>
+
+@code {
+    private Link _myLink = new Link(
+        start: new Position(lat: 35.2271, lon: 80.8431),
+        end: new Position(lat: 41.8781, lon: 87.6298)
+    );
+
+    protected override void OnInitialized()
+    {
+        _myLink.calculateWeight();
+    }
+}
