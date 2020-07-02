@@ -1,47 +1,69 @@
 ﻿@page "/testlib"
+@inject IJSRuntime JSRuntime;
+<h1>Test Graph Library</h1><br/>
 
-<h1>Test Mason Library</h1>
+<div class="row">
+  <div class="column">
+        <EditForm Model="@position" OnValidSubmit="HandleValidPos">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+            <h5>Enter the Locations's Name: </h5>
+            <InputText id="name" @bind-Value="position.name" /><br /><br />
 
-<h2>Charlotte</h2>
-<p>Lat: @_myLink.start.lat, Lon: @_myLink.start.lon</p>
+            <h5>Enter the Locations's Latitude(North is Negative): </h5>
+            <InputNumber id="latitude" @bind-Value="position.lat" /><br /><br />
 
-<h2>Chicago</h2>
-<p>Lat: @_myLink.end.lat, Lon: @_myLink.end.lon</p>
+            <h5>Enter the Locations's Longitude(East is Negative): </h5>
+            <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
 
-<h2>Weight</h2>
-<p>@_myLink.weight</p>
+            <button type="submit">Submit</button>
+            <button type="button" @onclick="clearPoses">Clear</button>
+        </EditForm>
+  </div>
+  <div class="column" id="c2">
+      <h5>Locations entered: </h5>
+      <p id="locations" style="white-space: pre-wrap">None so far</p>
+  </div>
+</div>
 
-<p>Current Count: @_count</p>
-<button class="btn btn-primary" @onclick="toggleCount">@_stop</button>
+<svg id='globe'></svg>
 
 @code {
-
-    private int _count = 0;
-    private bool _stop = false;
-    
-    private Link _myLink = new Link(
-        start: new Position(lat: 35.2271, lon: 80.8431),
-        end: new Position(lat: 41.8781, lon: 87.6298)
-    );
-
-    protected override void OnInitialized()
+    private List<Position> poses;
+    private Position position;
+    protected override async Task OnInitializedAsync()
     {
-        _myLink.calculateWeight();
-        _ = incrementAsync();
+        poses = new List<Position>();
+        position = new Position();
+        await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
 
-    private void toggleCount()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _stop = true;
+        await DisplayGlobe();
     }
 
-    private async Task incrementAsync()
+    private async Task DisplayGlobe()
     {
-        while (!_stop)
-        {
-            _count++;
-            base.StateHasChanged();
-            await Task.Delay(500);
-        }
+        await JSRuntime.InvokeVoidAsync("createGlobe", poses);
+    }
+
+    private async Task DisplayLocations()
+    {
+        await JSRuntime.InvokeVoidAsync("displayLocations", poses);
+    }
+
+    private async Task HandleValidPos()
+    {
+        poses.Add(new Position(position.name, position.lat, position.lon));
+        await DisplayLocations();
+        await DisplayGlobe();
+    }
+
+    private async Task clearPoses()
+    {
+        poses.Clear();
+        await DisplayLocations();
+        await DisplayGlobe();
     }
 }

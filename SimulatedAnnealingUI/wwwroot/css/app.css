@@ -180,4 +180,22 @@ app {
         /* Never collapse the sidebar for wide screens */
         display: block;
     }
+
+    .column {
+        float: left;
+        width: 50%;
+    }
+      
+    /* Clear floats after the columns */
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    #c2 {
+        border-left: 6px solid black;
+        height: 300px;
+        padding: 6px 20px;
+    }
 }
