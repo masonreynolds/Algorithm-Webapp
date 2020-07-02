@@ -27,7 +27,10 @@
       } else {
           <ul>
             @foreach (var pose in poses) {
-                <li>@pose.name: @pose.lat, @pose.lon</li>
+                <li key=@pose.ID>
+                    @pose.name: @pose.lat, @pose.lon - 
+                    <button class="btn btn-danger" @onclick="() => HandleRemovePos(pose.ID)">X</button>
+                </li>
             }
           </ul>
       }
@@ -39,10 +42,12 @@
 @code {
     private List<Position> poses;
     private Position position;
+    private Random rand;
     protected override async Task OnInitializedAsync()
     {
         poses = new List<Position>();
         position = new Position();
+        rand = new Random();
         await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
 
@@ -58,7 +63,13 @@
 
     private async Task HandleValidPos()
     {
-        poses.Add(new Position(position.name, position.lat, position.lon));
+        poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+        await DisplayGlobe();
+    }
+
+    private async Task HandleRemovePos(int id)
+    {
+        poses = poses.Where(pose => pose.ID != id).ToList();
         await DisplayGlobe();
     }
 
