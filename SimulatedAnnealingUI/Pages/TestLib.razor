@@ -94,7 +94,11 @@
     {
         WeightedGraph graph = new WeightedGraph(poses);
         IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
-        links = solutionSteps.Last().links;
-        await DisplayGlobe();
+        foreach (var step in solutionSteps)
+        {
+            links = step.links;
+            await DisplayGlobe();
+            await Task.Delay(300);
+        }
     }
 }

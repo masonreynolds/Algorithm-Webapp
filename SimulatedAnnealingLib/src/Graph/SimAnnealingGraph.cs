@@ -42,6 +42,7 @@ namespace Graph
 		private IEnumerable<WeightedGraph> runSimAnneal(WeightedGraph start)
 		{
 			WeightedGraph currState = start;
+			WeightedGraph lastState = null;
 			double temp = maxTemp;
 
 			while (temp >= threshold * maxTemp)
@@ -60,7 +61,11 @@ namespace Graph
 					currState = nextState;
 				}
 
-				yield return currState;
+				if (currState != lastState)
+				{
+					lastState = currState;
+					yield return currState;
+				}
 
 				temp *= decrement;
 				iterations++;
