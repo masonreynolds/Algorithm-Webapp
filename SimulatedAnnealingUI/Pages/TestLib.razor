@@ -1,27 +1,21 @@
 ﻿@page "/testlib"
 @inject IJSRuntime JSRuntime;
+@inject HttpClient Http;
+@inject IGeocodeService geocodeService;
 <h1>Test Graph Library</h1><br/>
 
 <div class="row">
   <div class="column">
-        <EditForm Model="@position" OnValidSubmit="HandleValidPos">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-            <h5>Enter the Locations's Name: </h5>
-            <InputText id="name" @bind-Value="position.name" /><br /><br />
+    <div class="mb-4">
+        <input type="text" placeholder="Enter address or city" class="form-control" @bind="@address" />
+        <div style="display:flex;justify-content:space-around;" class="mt-1">
+        <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos">Add</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses">Clear</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing">Calculate Path</button>
+        </div>
+    </div>
 
-            <h5>Enter the Locations's Latitude(South is Negative): </h5>
-            <InputNumber id="latitude" @bind-Value="position.lat" /><br /><br />
-
-            <h5>Enter the Locations's Longitude(West is Negative): </h5>
-            <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
-
-            <button type="submit">Submit</button>
-            <button type="button" @onclick="ClearPoses">Clear</button>
-            <button type="button" @onclick="runSimAnnealing">Calculate Path</button>
-        </EditForm><br />
-
-        <svg id='globe'></svg>
+    <svg id='globe'></svg>
   </div>
   <div class="column" id="c2">
       <h5>Locations entered: </h5>
@@ -42,15 +36,14 @@
 
 @code {
     private List<Position> poses;
-    private Position position;
     private List<Link> links;
     private bool rendered;
     private Random rand;
+    private string address;
     
     protected override async Task OnInitializedAsync()
     {
         poses = new List<Position>();
-        position = new Position();
         links = new List<Link>();
         rendered = false;
         rand = new Random();
@@ -73,8 +66,17 @@
 
     private async Task HandleValidPos()
     {
-        poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
-        await DisplayGlobe();
+        var position = await geocodeService.GetPos(address);
+        if (position != null)
+        {
+            poses.Add(position);
+            // poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+            await DisplayGlobe();
+        }
+        else
+        {
+
+        }
     }
 
     private async Task HandleRemovePos(int id)
@@ -92,13 +94,16 @@
 
     private async Task runSimAnnealing()
     {
-        WeightedGraph graph = new WeightedGraph(poses);
-        IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
-        foreach (var step in solutionSteps)
+        if (poses.Count > 0)
         {
-            links = step.links;
-            await DisplayGlobe();
-            await Task.Delay(300);
+            WeightedGraph graph = new WeightedGraph(poses);
+            IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
+            foreach (var step in solutionSteps)
+            {
+                links = step.links;
+                await DisplayGlobe();
+                await Task.Delay(300);
+            }
         }
     }
 }
