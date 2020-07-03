@@ -6,22 +6,36 @@ namespace Graph
 {
 	public class SimAnnealingGraph
 	{
+		public struct annealResult
+		{
+			public WeightedGraph state;
+			public double iterations;
+			public double temp;
+
+			public annealResult(WeightedGraph state, double iterations, double temp)
+			{
+				this.state = state;
+				this.iterations = iterations;
+				this.temp = temp;
+			}
+		}
+
 		private WeightedGraph start { get; set; }
 		private double threshold { get; set; }
 		private double decrement { get; set; }
 		private int maxTemp { get; set; }
 		public int iterations { get; set; }
 
-		public static (WeightedGraph, int) startSimAnneal(WeightedGraph start, int maxTemp, double decrement, double threshold)
+		public static annealResult startSimAnneal(WeightedGraph start, int maxTemp, double decrement, double threshold)
 		{
 			var graph = new SimAnnealingGraph(start, maxTemp, decrement, threshold);
 
-			WeightedGraph solution = graph.runSimAnneal(start).ToList()[^1];
+			annealResult solution = graph.runSimAnneal(start).ToList()[^1];
 
-			return (solution, graph.iterations);
+			return solution;
 		}
 
-		public static IEnumerable<WeightedGraph> Run(WeightedGraph start, int maxTemp, double decrement, double threshold)
+		public static IEnumerable<annealResult> Run(WeightedGraph start, int maxTemp, double decrement, double threshold)
 		{
 			var graph = new SimAnnealingGraph(start, maxTemp, decrement, threshold);
 
@@ -39,7 +53,7 @@ namespace Graph
 			this.iterations = 0;
 		}
 
-		private IEnumerable<WeightedGraph> runSimAnneal(WeightedGraph start)
+		private IEnumerable<annealResult> runSimAnneal(WeightedGraph start)
 		{
 			WeightedGraph currState = start;
 			WeightedGraph lastState = null;
@@ -64,7 +78,7 @@ namespace Graph
 				if (currState != lastState)
 				{
 					lastState = currState;
-					yield return currState;
+					yield return new annealResult(currState, iterations, temp);
 				}
 
 				temp *= decrement;

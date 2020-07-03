@@ -1,6 +1,12 @@
 ﻿@page "/testlib"
 @inject IJSRuntime JSRuntime;
-<h1>Test Graph Library</h1><br/>
+
+@if (dist == 0) {
+    <h1>Test Graph Library</h1><br/>
+}
+else {
+    <h1>Test Graph Library - @dist kilometers - Temp: @temp</h1><br/>
+}
 
 <div class="row">
   <div class="column">
@@ -18,7 +24,7 @@
 
             <button type="submit">Submit</button>
             <button type="button" @onclick="ClearPoses">Clear</button>
-            <button type="button" @onclick="runSimAnnealing">Calculate Path</button>
+            <button type="button" disabled=@invalid @onclick="runSimAnnealing">Calculate Path</button>
         </EditForm><br />
 
         <svg id='globe'></svg>
@@ -45,7 +51,10 @@
     private Position position;
     private List<Link> links;
     private bool rendered;
+    private bool invalid;
     private Random rand;
+    private double temp;
+    private int dist;
     
     protected override async Task OnInitializedAsync()
     {
@@ -53,6 +62,8 @@
         position = new Position();
         links = new List<Link>();
         rendered = false;
+        invalid = true;
+        dist = 0;
         rand = new Random();
         await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
@@ -74,12 +85,27 @@
     private async Task HandleValidPos()
     {
         poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+
+        if (poses.Count > 2)
+        {
+            invalid = false;
+            this.StateHasChanged();
+        }
+
         await DisplayGlobe();
     }
 
     private async Task HandleRemovePos(int id)
     {
         poses = poses.Where(pose => pose.ID != id).ToList();
+        links.Clear();
+
+        if (poses.Count < 3)
+        {
+            invalid = true;
+            this.StateHasChanged();
+        }
+
         await DisplayGlobe();
     }
 
@@ -92,13 +118,19 @@
 
     private async Task runSimAnnealing()
     {
+        invalid = true;
         WeightedGraph graph = new WeightedGraph(poses);
-        IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
+        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, 500*poses.Count, 0.999, 0.001);
         foreach (var step in solutionSteps)
         {
-            links = step.links;
+            dist = (int)step.state.distance;
+            links = step.state.links;
+            temp = Math.Round(step.temp, 2);
+            this.StateHasChanged();
             await DisplayGlobe();
-            await Task.Delay(300);
+            await Task.Delay(50);
         }
+        invalid = false;
+        this.StateHasChanged();
     }
 }
