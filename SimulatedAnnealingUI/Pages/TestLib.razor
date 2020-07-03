@@ -10,10 +10,10 @@
             <h5>Enter the Locations's Name: </h5>
             <InputText id="name" @bind-Value="position.name" /><br /><br />
 
-            <h5>Enter the Locations's Latitude(North is Negative): </h5>
+            <h5>Enter the Locations's Latitude(South is Negative): </h5>
             <InputNumber id="latitude" @bind-Value="position.lat" /><br /><br />
 
-            <h5>Enter the Locations's Longitude(East is Negative): </h5>
+            <h5>Enter the Locations's Longitude(West is Negative): </h5>
             <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
 
             <button type="submit">Submit</button>
@@ -31,16 +31,23 @@
 @code {
     private List<Position> poses;
     private Position position;
+    private bool rendered;
+
     protected override async Task OnInitializedAsync()
     {
         poses = new List<Position>();
         position = new Position();
+        rendered = false;
         await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await DisplayGlobe();
+        if (!rendered)
+        {
+            rendered = true;
+            await DisplayGlobe();
+        }
     }
 
     private async Task DisplayGlobe()

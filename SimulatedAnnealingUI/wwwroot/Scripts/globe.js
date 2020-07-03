@@ -1,4 +1,10 @@
-let rendered = false;
+
+
+const width = 1000;
+const height = 750;
+const projection = d3.geoOrthographic();
+const path = d3.geoPath().projection(projection);
+const center = [width/2, height/2];
 
 let config = {
     speed: 0.0,
@@ -7,24 +13,21 @@ let config = {
     rotation: 0
 };
 
-const width = 1000;
-const height = 750;
-const projection = d3.geoOrthographic();
-const path = d3.geoPath().projection(projection);
-const center = [width/2, height/2];
 let markerGroup = null;
-let svg = null;
+let rendered = false;
+let locations = [];
 let timer = null;
+let svg = null;
 
-function createGlobe(locations) {
-    if (timer)
-    {
-        timer.stop();
-    }
-
+function createGlobe(locs) {
     if (!rendered)
     {
-        rendered=true;
+        let dragging = false;
+        rendered = true;
+        let mouseX = 0;
+        let mouseY = 0;
+        let start = 0;
+        let rot = 0;
 
         svg = d3.select('#globe')
             .attr('width', width).attr('height', height)
@@ -33,8 +36,7 @@ function createGlobe(locations) {
         markerGroup = svg.append('g');
 
         drawGraticule();
-        drawGlobe();    
-        enableRotation();    
+        drawGlobe(); 
 
         function drawGlobe() {  
             d3.queue()
@@ -63,67 +65,81 @@ function createGlobe(locations) {
                 .style("fill", "white")
                 .style("stroke", "gray");
         }
+    
+        function onMouseMove(event) {
+            config.rotation = rot - (mouseX - event.clientX) * 0.1;
+            config.verticalTilt = start + (mouseY - event.clientY) * 0.1;
+
+            if (dragging)
+            {
+                enableRotation();
+                dragging = false;
+            }
+        }
+
+        document.getElementById('globe').addEventListener("mousedown", function(event) {
+            if (timer)
+            {
+                document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
+                timer.stop();
+            }
+
+            start = config.verticalTilt;
+            rot = config.rotation;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+            dragging = true;
+            
+            document.getElementById('globe').addEventListener('mousemove', onMouseMove);
+        });
+
+        document.getElementById('globe').addEventListener("mouseup", function() {
+            document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
+            timer.stop();
+        });
+    
+        document.getElementById('globe').addEventListener("ondragstart", function(event) {
+            return false;
+        });
     }
     else
     {
         markerGroup.selectAll('circle').remove();
-        enableRotation();
+        locations = locs;
+        drawMarkers();
     }
-
-    function enableRotation() {
-        timer = d3.timer(function (elapsed) {
-            projection.rotate([config.rotation, config.verticalTilt, config.horizontalTilt]);
-            svg.selectAll("path").attr("d", path);
-            drawMarkers();
-        });
-    }   
-
-    function drawMarkers() {
-        const markers = markerGroup.selectAll('circle')
-            .data(locations);
-        markers
-            .enter()
-            .append('circle')
-            .merge(markers)
-            .attr('cx', d => projection([d.lon, d.lat])[0])
-            .attr('cy', d => projection([d.lon, d.lat])[1])
-            .attr('fill', d => {
-                const coordinate = [d.lon, d.lat];
-                gdistance = d3.geoDistance(coordinate, projection.invert(center));
-                return gdistance > 1.57 ? 'none' : 'red';
-            })
-            .attr('r', 7);
-
-        markerGroup.each(function () {
-            this.parentNode.appendChild(this);
-        });
-    }
-    
-
-    document.getElementById('globe').addEventListener("mousedown", function(event) {
-        document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
-        let start = config.verticalTilt;
-        let rot = config.rotation;
-        let mouseX = event.clientX;
-        let mouseY = event.clientY;
-
-        function onMouseMove(event) {
-            config.rotation = rot - (mouseX - event.clientX) * 0.1;
-            config.verticalTilt = start + (mouseY - event.clientY) * 0.1;
-        }
-        
-        document.getElementById('globe').addEventListener('mousemove', onMouseMove);
-        
-        document.getElementById('globe').addEventListener("mouseup", function() {
-            document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
-        });
-    });
-
-    document.getElementById('globe').addEventListener("ondragstart", function(event) {
-        return false;
-    });
 }
 
 function setRendered(isRendered) {
     rendered = isRendered;
+}
+
+function enableRotation() {
+    timer = d3.timer(function (elapsed) {
+        projection.rotate([config.rotation, config.verticalTilt, config.horizontalTilt]);
+        svg.selectAll("path").attr("d", path);
+        drawMarkers();
+    });
+}   
+
+function drawMarkers() {
+    const markers = markerGroup.selectAll('circle')
+        .data(locations);
+        
+    markers
+        .enter()
+        .append('circle')
+        .merge(markers)
+        .attr('cx', d => projection([d.lon, d.lat])[0])
+        .attr('cy', d => projection([d.lon, d.lat])[1])
+        .attr('fill', d => {
+            const coordinate = [d.lon, d.lat];
+            gdistance = d3.geoDistance(coordinate, projection.invert(center));
+            return gdistance > 1.57 ? 'none' : 'red';
+        })
+        .attr('r', 7);
+
+    markerGroup.each(function () {
+        this.parentNode.appendChild(this);
+    });
 }
