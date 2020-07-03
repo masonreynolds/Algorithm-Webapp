@@ -22,7 +22,18 @@
   </div>
   <div class="column" id="c2">
       <h5>Locations entered: </h5>
-      <p id="locations" style="white-space: pre-wrap">None so far</p>
+      @if (poses.Count == 0) {
+        <p id="locations" style="white-space: pre-wrap">None so far</p>
+      } else {
+          <ul>
+            @foreach (var pose in poses) {
+                <li key=@pose.ID>
+                    @pose.name: @pose.lat, @pose.lon - 
+                    <button class="btn btn-danger" @onclick="() => HandleRemovePos(pose.ID)">X</button>
+                </li>
+            }
+          </ul>
+      }
   </div>
 </div>
 
@@ -32,12 +43,14 @@
     private List<Position> poses;
     private Position position;
     private bool rendered;
-
+    private Random rand;
+    
     protected override async Task OnInitializedAsync()
     {
         poses = new List<Position>();
         position = new Position();
         rendered = false;
+        rand = new Random();
         await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
 
@@ -55,22 +68,21 @@
         await JSRuntime.InvokeVoidAsync("createGlobe", poses);
     }
 
-    private async Task DisplayLocations()
-    {
-        await JSRuntime.InvokeVoidAsync("displayLocations", poses);
-    }
-
     private async Task HandleValidPos()
     {
-        poses.Add(new Position(position.name, position.lat, position.lon));
-        await DisplayLocations();
+        poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+        await DisplayGlobe();
+    }
+
+    private async Task HandleRemovePos(int id)
+    {
+        poses = poses.Where(pose => pose.ID != id).ToList();
         await DisplayGlobe();
     }
 
     private async Task clearPoses()
     {
         poses.Clear();
-        await DisplayLocations();
         await DisplayGlobe();
     }
 }
