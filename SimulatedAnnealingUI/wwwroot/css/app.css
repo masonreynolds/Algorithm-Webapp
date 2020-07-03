@@ -194,8 +194,13 @@ app {
     }
 
     #c2 {
-        border-left: 6px solid black;
-        height: 300px;
-        padding: 6px 20px;
+        border-left: 5px solid darkblue;
+        padding-left: 20px;
+        height: 100%;
+    }
+
+    #globe  {
+        height: 500px;
+        width: 500px;
     }
 }

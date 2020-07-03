@@ -17,8 +17,11 @@
             <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
 
             <button type="submit">Submit</button>
-            <button type="button" @onclick="clearPoses">Clear</button>
-        </EditForm>
+            <button type="button" @onclick="ClearPoses">Clear</button>
+            <button type="button" @onclick="runSimAnnealing">Calculate Path</button>
+        </EditForm><br />
+
+        <svg id='globe'></svg>
   </div>
   <div class="column" id="c2">
       <h5>Locations entered: </h5>
@@ -37,11 +40,10 @@
   </div>
 </div>
 
-<svg id='globe'></svg>
-
 @code {
     private List<Position> poses;
     private Position position;
+    private List<Link> links;
     private bool rendered;
     private Random rand;
     
@@ -49,6 +51,7 @@
     {
         poses = new List<Position>();
         position = new Position();
+        links = new List<Link>();
         rendered = false;
         rand = new Random();
         await JSRuntime.InvokeVoidAsync("setRendered", false);
@@ -65,7 +68,7 @@
 
     private async Task DisplayGlobe()
     {
-        await JSRuntime.InvokeVoidAsync("createGlobe", poses);
+        await JSRuntime.InvokeVoidAsync("createGlobe", poses, links);
     }
 
     private async Task HandleValidPos()
@@ -80,9 +83,18 @@
         await DisplayGlobe();
     }
 
-    private async Task clearPoses()
+    private async Task ClearPoses()
     {
         poses.Clear();
+        links.Clear();
+        await DisplayGlobe();
+    }
+
+    private async Task runSimAnnealing()
+    {
+        WeightedGraph graph = new WeightedGraph(poses);
+        IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
+        links = solutionSteps.Last().links;
         await DisplayGlobe();
     }
 }

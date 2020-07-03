@@ -1,10 +1,9 @@
-
-
-const width = 1000;
-const height = 750;
+const width = 500;
+const height = 500;
+const offset = 230;
 const projection = d3.geoOrthographic();
 const path = d3.geoPath().projection(projection);
-const center = [width/2, height/2];
+const center = [width/2 + offset, height/2];
 
 let config = {
     speed: 0.0,
@@ -16,10 +15,11 @@ let config = {
 let markerGroup = null;
 let rendered = false;
 let locations = [];
+let links = [];
 let timer = null;
 let svg = null;
 
-function createGlobe(locs) {
+function createGlobe(locs, conns) {
     if (!rendered)
     {
         let dragging = false;
@@ -29,9 +29,7 @@ function createGlobe(locs) {
         let start = 0;
         let rot = 0;
 
-        svg = d3.select('#globe')
-            .attr('width', width).attr('height', height)
-            .attr('viewBox', [85, -50, width/4*3, height/4*3]);
+        svg = d3.select('#globe').attr('viewBox', [offset, 0, width, height]);
             
         markerGroup = svg.append('g');
 
@@ -67,8 +65,8 @@ function createGlobe(locs) {
         }
     
         function onMouseMove(event) {
-            config.rotation = rot - (mouseX - event.clientX) * 0.1;
-            config.verticalTilt = start + (mouseY - event.clientY) * 0.1;
+            config.rotation = rot - (mouseX - event.clientX) * 0.2;
+            config.verticalTilt = start + (mouseY - event.clientY) * 0.2;
 
             if (dragging)
             {
@@ -105,8 +103,11 @@ function createGlobe(locs) {
     else
     {
         markerGroup.selectAll('circle').remove();
+        markerGroup.selectAll('path').remove();
         locations = locs;
+        links = conns;
         drawMarkers();
+        drawArcs();
     }
 }
 
@@ -119,6 +120,7 @@ function enableRotation() {
         projection.rotate([config.rotation, config.verticalTilt, config.horizontalTilt]);
         svg.selectAll("path").attr("d", path);
         drawMarkers();
+        drawArcs();
     });
 }   
 
@@ -142,4 +144,24 @@ function drawMarkers() {
     markerGroup.each(function () {
         this.parentNode.appendChild(this);
     });
+}
+
+function drawArcs() {
+    if (links.length > 0)
+    {
+        let geoPath = d3.geoPath(projection);
+        let poses = {
+            "type": "LineString",
+            "coordinates": []
+        };
+
+        links.forEach(l => { poses.coordinates.push([l.start.lon, l.start.lat]); });
+        poses.coordinates.push([links[links.length-1].end.lon, links[links.length-1].end.lat])
+
+        markerGroup.append('path')
+            .attr('d', geoPath(poses))
+            .attr('fill', 'transparent')
+            .attr('stroke-width', 3)
+            .attr('stroke', 'black');
+    }
 }

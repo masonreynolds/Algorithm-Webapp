@@ -21,6 +21,7 @@ namespace Graph
         public WeightedGraph(List<Position> positions)
         {
             this.positions = positions;
+            links = new List<Link>();
             generateLinks();
         }
         
