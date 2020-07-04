@@ -1,8 +1,13 @@
 ﻿@page "/testlib"
 @inject IJSRuntime JSRuntime;
-@inject HttpClient Http;
 @inject IGeocodeService geocodeService;
-<h1>Test Graph Library</h1><br/>
+
+@if (dist == 0) {
+    <h1>Test Graph Library</h1><br/>
+}
+else {
+    <h1>Test Graph Library - @dist kilometers - Temp: @temp</h1><br/>
+}
 
 <div class="row">
   <div class="column">
@@ -10,8 +15,8 @@
         <input type="text" placeholder="Enter address or city" class="form-control" @bind="@address" />
         <div style="display:flex;justify-content:space-around;" class="mt-1">
         <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos">Add</button>
-        <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses">Clear</button>
-        <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing">Calculate Path</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses" disabled=@invalid>Clear</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing" disabled=@invalid>Calculate Path</button>
         </div>
     </div>
 
@@ -37,24 +42,28 @@
 @code {
     private List<Position> poses;
     private List<Link> links;
-    private bool rendered;
     private Random rand;
     private string address;
+    private bool invalid;
+    private double temp;
+    private int dist;
     
     protected override async Task OnInitializedAsync()
     {
         poses = new List<Position>();
         links = new List<Link>();
-        rendered = false;
         rand = new Random();
+        address = "";
+        invalid = true;
+        temp = 0.0;
+        dist = 0;
         await JSRuntime.InvokeVoidAsync("setRendered", false);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!rendered)
+        if (!firstRender)
         {
-            rendered = true;
             await DisplayGlobe();
         }
     }
@@ -67,21 +76,30 @@
     private async Task HandleValidPos()
     {
         var position = await geocodeService.GetPos(address);
+        address = "";
         if (position != null)
         {
             poses.Add(position);
-            // poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+            if (poses.Count > 2)
+            {
+                invalid = false;
+                this.StateHasChanged();
+            }
             await DisplayGlobe();
-        }
-        else
-        {
-
         }
     }
 
     private async Task HandleRemovePos(int id)
     {
         poses = poses.Where(pose => pose.ID != id).ToList();
+        links.Clear();
+
+        if (poses.Count < 3)
+        {
+            invalid = true;
+            this.StateHasChanged();
+        }
+
         await DisplayGlobe();
     }
 
@@ -94,16 +112,19 @@
 
     private async Task runSimAnnealing()
     {
-        if (poses.Count > 0)
+        invalid = true;
+        var graph = new WeightedGraph(poses);
+        var solutionSteps = SimAnnealingGraph.Run(graph, 500*poses.Count, 0.999, 0.001);
+        foreach (var step in solutionSteps)
         {
-            WeightedGraph graph = new WeightedGraph(poses);
-            IEnumerable<WeightedGraph> solutionSteps = SimAnnealingGraph.Run(graph, 1, 0.999, 0.01);
-            foreach (var step in solutionSteps)
-            {
-                links = step.links;
-                await DisplayGlobe();
-                await Task.Delay(300);
-            }
+            dist = (int)step.state.distance;
+            links = step.state.links;
+            temp = Math.Round(step.temp, 2);
+            this.StateHasChanged();
+            await DisplayGlobe();
+            await Task.Delay(50);
         }
+        invalid = false;
+        this.StateHasChanged();
     }
 }
