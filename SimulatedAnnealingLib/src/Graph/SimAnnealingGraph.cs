@@ -59,18 +59,18 @@ namespace Graph
 			WeightedGraph lastState = null;
 			double temp = maxTemp;
 
-			while (temp >= threshold * maxTemp)
+			while (temp >= threshold)
 			{
 				WeightedGraph nextState = currState.generateRandomNeighbor();
 				double deltaEnergy = currState.distance - nextState.distance;
 				Random rand = new Random();
 				double r = rand.NextDouble();
 
-				if (deltaEnergy >= 0)
+				if (deltaEnergy > 0)
 				{
 					currState = nextState;
 				}
-				else if (Math.Exp(deltaEnergy / temp) > r)
+				else if (deltaEnergy < 0 && Math.Exp(deltaEnergy / temp) > r)
 				{
 					currState = nextState;
 				}

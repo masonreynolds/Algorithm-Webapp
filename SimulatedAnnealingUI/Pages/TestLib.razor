@@ -13,17 +13,17 @@ else {
         <EditForm Model="@position" OnValidSubmit="HandleValidPos">
         <DataAnnotationsValidator />
         <ValidationSummary />
-            <h5>Enter the Locations's Name: </h5>
+            <h5>Enter the Location's Name: </h5>
             <InputText id="name" @bind-Value="position.name" /><br /><br />
 
-            <h5>Enter the Locations's Latitude(South is Negative): </h5>
+            <h5>Enter the Location's Latitude(South is Negative): </h5>
             <InputNumber id="latitude" @bind-Value="position.lat" /><br /><br />
 
-            <h5>Enter the Locations's Longitude(West is Negative): </h5>
+            <h5>Enter the Location's Longitude(West is Negative): </h5>
             <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
 
-            <button type="submit">Submit</button>
-            <button type="button" @onclick="ClearPoses">Clear</button>
+            <button type="submit" disabled=@running>Submit</button>
+            <button type="button" disabled=@running @onclick="ClearPoses">Clear</button>
             <button type="button" disabled=@invalid @onclick="runSimAnnealing">Calculate Path</button>
         </EditForm><br />
 
@@ -31,106 +31,88 @@ else {
   </div>
   <div class="column" id="c2">
       <h5>Locations entered: </h5>
-      @if (poses.Count == 0) {
-        <p id="locations" style="white-space: pre-wrap">None so far</p>
-      } else {
-          <ul>
-            @foreach (var pose in poses) {
-                <li key=@pose.ID>
-                    @pose.name: @pose.lat, @pose.lon - 
-                    <button class="btn btn-danger" @onclick="() => HandleRemovePos(pose.ID)">X</button>
-                </li>
-            }
-          </ul>
-      }
+      
   </div>
 </div>
 
 @code {
-    private List<Position> poses;
+    private static List<Position> positions;
+    private static bool invalid;
+    private static bool running;
+    private static TestLib comp;
     private Position position;
-    private List<Link> links;
     private bool rendered;
-    private bool invalid;
     private Random rand;
     private double temp;
     private int dist;
     
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        poses = new List<Position>();
+        positions = new List<Position>();
         position = new Position();
-        links = new List<Link>();
-        rendered = false;
-        invalid = true;
-        dist = 0;
         rand = new Random();
-        await JSRuntime.InvokeVoidAsync("setRendered", false);
+        rendered = false;
+        running = false;
+        invalid = true;
+        comp = this;
+        dist = 0;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!rendered)
-        {
-            rendered = true;
-            await DisplayGlobe();
-        }
+        await DisplayGlobe();
     }
 
     private async Task DisplayGlobe()
     {
-        await JSRuntime.InvokeVoidAsync("createGlobe", poses, links);
+        if (!rendered)
+        {
+            rendered = true;
+            await JSRuntime.InvokeVoidAsync("createGlobe");
+        }
     }
 
     private async Task HandleValidPos()
     {
-        poses.Add(new Position(rand.Next(0, 100000), position.lat, position.lon, position.name));
+        Position pose = new Position(rand.Next(0, 100000), position.lat, position.lon, position.name);
+        await JSRuntime.InvokeVoidAsync("addPosition", pose);
 
-        if (poses.Count > 2)
-        {
-            invalid = false;
-            this.StateHasChanged();
-        }
-
-        await DisplayGlobe();
-    }
-
-    private async Task HandleRemovePos(int id)
-    {
-        poses = poses.Where(pose => pose.ID != id).ToList();
-        links.Clear();
-
-        if (poses.Count < 3)
-        {
-            invalid = true;
-            this.StateHasChanged();
-        }
-
-        await DisplayGlobe();
+        positions = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
+        invalid = positions.Count < 3;
+        this.StateHasChanged();
     }
 
     private async Task ClearPoses()
     {
-        poses.Clear();
-        links.Clear();
-        await DisplayGlobe();
+        invalid = true;
+        comp.StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("clearPoses");
     }
 
     private async Task runSimAnnealing()
     {
-        invalid = true;
+        running = true;
+        List<Position> poses = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
         WeightedGraph graph = new WeightedGraph(poses);
-        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, 500*poses.Count, 0.999, 0.001);
+        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, 100*poses.Count, 0.9999, 1);
+
         foreach (var step in solutionSteps)
         {
+            await JSRuntime.InvokeVoidAsync("updateGlobe", step.state.positions, step.state.links);
             dist = (int)step.state.distance;
-            links = step.state.links;
             temp = Math.Round(step.temp, 2);
-            this.StateHasChanged();
-            await DisplayGlobe();
-            await Task.Delay(50);
+            await Task.Delay(10);
         }
+
+        running = false;
         invalid = false;
-        this.StateHasChanged();
+    }
+
+    [JSInvokable]
+    public static void UpdatePoses(List<Position> poses)
+    {
+        positions = poses;
+        invalid = positions.Count < 3 || running;
+        comp.StateHasChanged();
     }
 }

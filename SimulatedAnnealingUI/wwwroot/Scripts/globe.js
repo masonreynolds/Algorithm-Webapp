@@ -6,131 +6,154 @@ const path = d3.geoPath().projection(projection);
 const center = [width/2 + offset, height/2];
 
 let config = {
-    speed: 0.0,
     verticalTilt: 0,
-    horizontalTilt: 0,
     rotation: 0
 };
 
 let markerGroup = null;
-let rendered = false;
-let locations = [];
-let links = [];
+let positions = [];
+let currName = 'A';
 let timer = null;
+let links = [];
 let svg = null;
 
-function createGlobe(locs, conns) {
-    if (!rendered)
-    {
-        let dragging = false;
-        rendered = true;
-        let mouseX = 0;
-        let mouseY = 0;
-        let start = 0;
-        let rot = 0;
+function createGlobe() {
+    svg = d3.select('#globe').attr('viewBox', [offset, 0, width, height]);
+        
+    markerGroup = svg.append('g');
 
-        svg = d3.select('#globe').attr('viewBox', [offset, 0, width, height]);
-            
-        markerGroup = svg.append('g');
+    drawGraticule();
+    drawGlobe(); 
 
-        drawGraticule();
-        drawGlobe(); 
-
-        function drawGlobe() {  
-            d3.queue()
-                .defer(d3.json, 'https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json')
-                .await((error, worldData) => {
-                    svg.selectAll(".segment")
-                        .data(topojson.feature(worldData, worldData.objects.countries).features)
-                        .enter().append("path")
-                        .attr("class", "segment")
-                        .attr("d", path)
-                        .style("stroke", "black")
-                        .style("stroke-width", "1px")
-                        .style("fill", (d, i) => 'green')
-                        .style("opacity", "0.75");               
-                });
-        }
-
-        function drawGraticule() {
-            const graticule = d3.geoGraticule()
-                .step([10, 10]);
-
-            svg.append("path")
-                .datum(graticule)
-                .attr("class", "graticule")
-                .attr("d", path)
-                .style("fill", "white")
-                .style("stroke", "gray");
-        }
-    
-        function onMouseMove(event) {
-            config.rotation = rot - (mouseX - event.clientX) * 0.2;
-            config.verticalTilt = start + (mouseY - event.clientY) * 0.2;
-
-            if (dragging)
+    document.getElementById('globe').addEventListener("mousedown", function(event) {
+        if (event.button == 0)
+        {
+            if (document.getElementById('globe').onmousemove)
             {
-                enableRotation();
-                dragging = false;
-            }
-        }
-
-        document.getElementById('globe').addEventListener("mousedown", function(event) {
-            if (timer)
-            {
-                document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
+                document.getElementById('globe').onmousemove = null;
                 timer.stop();
             }
-
-            start = config.verticalTilt;
-            rot = config.rotation;
-            mouseX = event.clientX;
-            mouseY = event.clientY;
-            dragging = true;
             
-            document.getElementById('globe').addEventListener('mousemove', onMouseMove);
-        });
+            let start = config.verticalTilt;
+            let rot = config.rotation;
+            let mouseX = event.clientX;
+            let mouseY = event.clientY;
+            let dragging = true;
+            
+            document.getElementById('globe').onmousemove = function(event) {
+                config.rotation = rot - (mouseX - event.clientX) * 0.2;
+                config.verticalTilt = start + (mouseY - event.clientY) * 0.2;
 
-        document.getElementById('globe').addEventListener("mouseup", function() {
-            document.getElementById('globe').removeEventListener('mousemove', onMouseMove);
-            timer.stop();
-        });
-    
-        document.getElementById('globe').addEventListener("ondragstart", function(event) {
-            return false;
-        });
-    }
-    else
-    {
-        markerGroup.selectAll('circle').remove();
-        markerGroup.selectAll('path').remove();
-        locations = locs;
-        links = conns;
-        drawMarkers();
-        drawArcs();
-    }
-}
+                if (dragging)
+                {
+                    enableRotation();
+                    dragging = false;
+                }
+            };
+        }
+        else if (event.button == 2)
+        {
+            var m = document.getElementById('globe').getScreenCTM();
+            var p = document.getElementById('globe').createSVGPoint(); 
+            p.x = event.clientX;
+            p.y = event.clientY;
+            p = p.matrixTransform(m.inverse());
+            
+            let coords = projection.invert([p.x, p.y]);
+            positions.push({id: Math.floor(Math.random() * 100000), lat: coords[1], lon: coords[0], name: currName});
+            currName += String.fromCharCode(currName.charCodeAt(0) + 1);
+            updateGlobe(null, []);
+        }
+    });
 
-function setRendered(isRendered) {
-    rendered = isRendered;
+    document.getElementById('globe').addEventListener("mouseup", function(event) {
+        if (event.button == 0)
+        {
+            document.getElementById('globe').onmousemove = null;
+
+            if (timer)
+            {
+                timer.stop();
+            }
+        }
+    });
+
+    document.getElementById('globe').addEventListener("ondragstart", function(event) {
+        return false;
+    });
+
+    document.getElementById('globe').addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    }, false);
 }
 
 function enableRotation() {
-    timer = d3.timer(function (elapsed) {
-        projection.rotate([config.rotation, config.verticalTilt, config.horizontalTilt]);
+    timer = d3.timer(function () {
+        projection.rotate([config.rotation, config.verticalTilt, 0]);
         svg.selectAll("path").attr("d", path);
-        drawMarkers();
-        drawArcs();
+        updateGlobe();
     });
 }   
 
+function drawGlobe() {  
+    d3.queue()
+        .defer(d3.json, 'https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json')
+        .await((error, worldData) => {
+            svg.selectAll(".segment")
+                .data(topojson.feature(worldData, worldData.objects.countries).features)
+                .enter().append("path")
+                .attr("class", "segment")
+                .attr("d", path)
+                .style("stroke", "black")
+                .style("stroke-width", "1px")
+                .style("fill", (d, i) => 'green')
+                .style("opacity", "0.75");               
+        });
+}
+
+function drawGraticule() {
+    const graticule = d3.geoGraticule()
+        .step([10, 10]);
+
+    svg.append("path")
+        .datum(graticule)
+        .attr("class", "graticule")
+        .attr("d", path)
+        .style("fill", "white")
+        .style("stroke", "gray");
+}
+
 function drawMarkers() {
     const markers = markerGroup.selectAll('circle')
-        .data(locations);
+        .data(positions);
         
     markers
         .enter()
         .append('circle')
+        .on("mousedown", function(pose) {
+            d3.event.stopPropagation();
+
+            if (d3.event.button == 0)
+            {
+                document.getElementById('globe').onmousemove = function(event) {
+                    var m = document.getElementById('globe').getScreenCTM();
+                    var p = document.getElementById('globe').createSVGPoint(); 
+                    p.x = event.clientX;
+                    p.y = event.clientY;
+                    p = p.matrixTransform(m.inverse());
+                    let coords = projection.invert([p.x, p.y]);
+                    pose.lat = coords[1];
+                    pose.lon = coords[0];
+                    updateGlobe(null, []);
+                };
+            }
+            else if (d3.event.button == 2)
+            {
+                positions = positions.filter(p => p.lat != pose.lat && p.lon != pose.lon);
+                this.remove();
+                updateGlobe(null, []);
+            }
+        })
         .merge(markers)
         .attr('cx', d => projection([d.lon, d.lat])[0])
         .attr('cy', d => projection([d.lon, d.lat])[1])
@@ -164,4 +187,35 @@ function drawArcs() {
             .attr('stroke-width', 3)
             .attr('stroke', 'black');
     }
+}
+
+function updateGlobe(poses, conns) {
+    if (poses)
+    {
+        positions = poses;
+    }
+
+    if (conns)
+    {
+        links = conns;
+    }
+
+    DotNet.invokeMethod('SimulatedAnnealingUI', 'UpdatePoses', positions);
+    markerGroup.selectAll('circle').remove();
+    markerGroup.selectAll('path').remove();
+    drawMarkers();
+    drawArcs();
+}
+
+function addPosition(pose) {
+    positions.push(pose);
+    updateGlobe();
+}
+
+function clearPoses() {
+    updateGlobe([], []);
+}
+
+function getPoses() {
+    return positions;
 }
