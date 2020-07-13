@@ -44,7 +44,7 @@ namespace Graph
 
             for (int i = 0; i < numPoses; i++)
             {
-                this.positions.Add(new Position(rand.Next(-90, 91), rand.Next(-180, 181)));
+                this.positions.Add(new Position(rand.Next(100000), rand.NextDouble() * 180 - 90, rand.NextDouble() * 360 - 180));
             }
         }
 

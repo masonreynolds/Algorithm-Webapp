@@ -9,7 +9,7 @@ else {
 }
 
 <div class="row">
-  <div class="column">
+    <div class="column">
         <EditForm Model="@position" OnValidSubmit="HandleValidPos">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -28,10 +28,42 @@ else {
         </EditForm><br />
 
         <svg id='globe'></svg>
-  </div>
-  <div class="column" id="c2">
-      <h5>Locations entered: </h5>
-      
+    </div>
+    <div class="column" id="c2">
+        <h5>Step Speed: @stepSpeed</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="1000" class="slider" id="myRange" @bind="stepSpeed" @bind:event="oninput">
+        </div>
+        <br />
+        <h5>Max Temperature: @maxTemp</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="100000" class="slider" id="myRange" @bind="maxTemp" @bind:event="oninput">
+        </div>
+        <br />
+        <h5>Decrement per Step: @decrement</h5>
+        <div class="slidecontainer">
+            <input type="range" min="0.0001" max="0.9999" step="0.0001" class="slider" id="myRange" @bind="decrement" @bind:event="oninput">
+        </div>
+        <br />
+        <h5>Threshold: @threshold</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="@maxTemp" class="slider" id="myRange" @bind="threshold" @bind:event="oninput">
+        </div>
+        <br />
+        <button type="button" disabled=@running @onclick="switchSteps">Turn On/Off Updates</button>
+        <br /><br />
+        <h5>Locations entered: </h5>
+        @if (positions.Count == 0) {
+            <p id="locations" style="white-space: pre-wrap">None so far</p>
+        } else {
+            <ul>
+                @foreach (var pose in positions) {
+                    <li key=@position.ID>
+                        <b>@pose.name</b>: @pose.lat, @pose.lon
+                    </li>
+                }
+            </ul>
+        }
   </div>
 </div>
 
@@ -41,7 +73,12 @@ else {
     private static bool running;
     private static TestLib comp;
     private Position position;
+    private double decrement;
+    private bool updatesOn;
     private bool rendered;
+    private int stepSpeed;    
+    private int threshold;
+    private int maxTemp;
     private Random rand;
     private double temp;
     private int dist;
@@ -51,9 +88,14 @@ else {
         positions = new List<Position>();
         position = new Position();
         rand = new Random();
+        updatesOn = false;
+        decrement = 0.999;
         rendered = false;
+        maxTemp = 10000;
         running = false;
         invalid = true;
+        stepSpeed = 5;
+        threshold = 1;
         comp = this;
         dist = 0;
     }
@@ -74,7 +116,7 @@ else {
 
     private async Task HandleValidPos()
     {
-        Position pose = new Position(rand.Next(0, 100000), position.lat, position.lon, position.name);
+        Position pose = new Position(rand.Next(0, 100000), position.name, position.lat, position.lon);
         await JSRuntime.InvokeVoidAsync("addPosition", pose);
 
         positions = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
@@ -89,19 +131,34 @@ else {
         await JSRuntime.InvokeVoidAsync("clearPoses");
     }
 
+    private void switchSteps(MouseEventArgs e)
+    {
+        updatesOn = !updatesOn;
+    }
+
     private async Task runSimAnnealing()
     {
         running = true;
         List<Position> poses = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
         WeightedGraph graph = new WeightedGraph(poses);
-        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, 100*poses.Count, 0.9999, 1);
+        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, maxTemp, decrement, threshold);
 
-        foreach (var step in solutionSteps)
+        if (updatesOn)
         {
+            foreach (var step in solutionSteps)
+            {
+                await JSRuntime.InvokeVoidAsync("updateGlobe", step.state.positions, step.state.links);
+                dist = (int)step.state.distance;
+                temp = Math.Round(step.temp, 2);
+                await Task.Delay(stepSpeed);
+            }
+        }
+        else
+        {
+            SimAnnealingGraph.annealResult step = solutionSteps.Last();
             await JSRuntime.InvokeVoidAsync("updateGlobe", step.state.positions, step.state.links);
             dist = (int)step.state.distance;
             temp = Math.Round(step.temp, 2);
-            await Task.Delay(10);
         }
 
         running = false;

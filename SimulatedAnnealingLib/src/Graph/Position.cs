@@ -5,7 +5,7 @@ namespace Graph
 {
 	public class Position
 	{
-		static private char currName = 'A';
+		static private int count = 0;
 
 		[Required]
 		public int ID { get; set; }
@@ -20,16 +20,15 @@ namespace Graph
 
 		public Position()
 		{
-			this.name = currName.ToString();
-			currName++;
+			this.name = "Custom Location " + (++count);
 		}
 
-		public Position(double lat, double lon)
+		public Position(int ID, double lat, double lon)
 		{
-			this.name = currName.ToString();
+			this.name = "Custom Location " + (++count);
 			this.lat = lat;
 			this.lon = lon;
-			currName++;
+			this.ID = ID;
 		}
 
 		public Position(string name, double lat, double lon)
@@ -39,9 +38,9 @@ namespace Graph
 			this.lon = lon;
 		}
 
-		public Position(int iD, double lat, double lon, string name)
+		public Position(int ID, string name, double lat, double lon)
 		{
-			ID = iD;
+			this.ID = ID;
 			this.lat = lat;
 			this.lon = lon;
 			this.name = name;

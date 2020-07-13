@@ -12,10 +12,10 @@ let config = {
 
 let markerGroup = null;
 let positions = [];
-let currName = 'A';
 let timer = null;
 let links = [];
 let svg = null;
+let count = 0;
 
 function createGlobe() {
     svg = d3.select('#globe').attr('viewBox', [offset, 0, width, height]);
@@ -25,7 +25,7 @@ function createGlobe() {
     drawGraticule();
     drawGlobe(); 
 
-    document.getElementById('globe').addEventListener("mousedown", function(event) {
+    document.getElementById('globe').addEventListener('mousedown', function(event) {
         if (event.button == 0)
         {
             if (document.getElementById('globe').onmousemove)
@@ -60,13 +60,13 @@ function createGlobe() {
             p = p.matrixTransform(m.inverse());
             
             let coords = projection.invert([p.x, p.y]);
-            positions.push({id: Math.floor(Math.random() * 100000), lat: coords[1], lon: coords[0], name: currName});
-            currName += String.fromCharCode(currName.charCodeAt(0) + 1);
+            positions.push({id: Math.floor(Math.random() * 100000), lat: parseFloat(coords[1].toFixed(4)), 
+                            lon: parseFloat(coords[0].toFixed(4)), name: 'Custom Location ' + (++count)});
             updateGlobe(null, []);
         }
     });
 
-    document.getElementById('globe').addEventListener("mouseup", function(event) {
+    document.getElementById('globe').addEventListener('mouseup', function(event) {
         if (event.button == 0)
         {
             document.getElementById('globe').onmousemove = null;
@@ -78,11 +78,11 @@ function createGlobe() {
         }
     });
 
-    document.getElementById('globe').addEventListener("ondragstart", function(event) {
+    document.getElementById('globe').addEventListener('ondragstart', function(event) {
         return false;
     });
 
-    document.getElementById('globe').addEventListener("contextmenu", function(event) {
+    document.getElementById('globe').addEventListener('contextmenu', function(event) {
         event.preventDefault();
     }, false);
 }
@@ -90,7 +90,7 @@ function createGlobe() {
 function enableRotation() {
     timer = d3.timer(function () {
         projection.rotate([config.rotation, config.verticalTilt, 0]);
-        svg.selectAll("path").attr("d", path);
+        svg.selectAll('path').attr('d', path);
         updateGlobe();
     });
 }   
@@ -99,15 +99,15 @@ function drawGlobe() {
     d3.queue()
         .defer(d3.json, 'https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json')
         .await((error, worldData) => {
-            svg.selectAll(".segment")
+            svg.selectAll('.segment')
                 .data(topojson.feature(worldData, worldData.objects.countries).features)
-                .enter().append("path")
-                .attr("class", "segment")
-                .attr("d", path)
-                .style("stroke", "black")
-                .style("stroke-width", "1px")
-                .style("fill", (d, i) => 'green')
-                .style("opacity", "0.75");               
+                .enter().append('path')
+                .attr('class', 'segment')
+                .attr('d', path)
+                .style('stroke', 'black')
+                .style('stroke-width', '1px')
+                .style('fill', (d, i) => 'green')
+                .style('opacity', '0.75');               
         });
 }
 
@@ -115,12 +115,12 @@ function drawGraticule() {
     const graticule = d3.geoGraticule()
         .step([10, 10]);
 
-    svg.append("path")
+    svg.append('path')
         .datum(graticule)
-        .attr("class", "graticule")
-        .attr("d", path)
-        .style("fill", "white")
-        .style("stroke", "gray");
+        .attr('class', 'graticule')
+        .attr('d', path)
+        .style('fill', 'white')
+        .style('stroke', 'gray');
 }
 
 function drawMarkers() {
@@ -130,7 +130,7 @@ function drawMarkers() {
     markers
         .enter()
         .append('circle')
-        .on("mousedown", function(pose) {
+        .on('mousedown', function(pose) {
             d3.event.stopPropagation();
 
             if (d3.event.button == 0)
@@ -174,8 +174,8 @@ function drawArcs() {
     {
         let geoPath = d3.geoPath(projection);
         let poses = {
-            "type": "LineString",
-            "coordinates": []
+            'type': 'LineString',
+            'coordinates': []
         };
 
         links.forEach(l => { poses.coordinates.push([l.start.lon, l.start.lat]); });
@@ -213,6 +213,7 @@ function addPosition(pose) {
 }
 
 function clearPoses() {
+    count = 0;
     updateGlobe([], []);
 }
 
