@@ -202,6 +202,12 @@ app {
     #globe  {
         height: 500px;
         width: 500px;
+        display: block;
+        margin: auto;
+    }
+
+    .textbox {
+        width: 90%;
     }
 
     .slidecontainer {

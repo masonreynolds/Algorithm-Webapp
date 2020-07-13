@@ -1,5 +1,6 @@
 ﻿@page "/testlib"
 @inject IJSRuntime JSRuntime;
+@inject IGeocodeService geocodeService;
 
 @if (dist == 0) {
     <h1>Test Graph Library</h1><br/>
@@ -10,22 +11,13 @@ else {
 
 <div class="row">
     <div class="column">
-        <EditForm Model="@position" OnValidSubmit="HandleValidPos">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-            <h5>Enter the Location's Name: </h5>
-            <InputText id="name" @bind-Value="position.name" /><br /><br />
-
-            <h5>Enter the Location's Latitude(South is Negative): </h5>
-            <InputNumber id="latitude" @bind-Value="position.lat" /><br /><br />
-
-            <h5>Enter the Location's Longitude(West is Negative): </h5>
-            <InputNumber id="longitude" @bind-Value="position.lon" /><br /><br />
-
-            <button type="submit" disabled=@running>Submit</button>
-            <button type="button" disabled=@running @onclick="ClearPoses">Clear</button>
-            <button type="button" disabled=@invalid @onclick="runSimAnnealing">Calculate Path</button>
-        </EditForm><br />
+        <input type="text" placeholder="Enter address or city" class="textbox" @bind="@address" />
+        <div class="mt-1">
+            <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos">Add</button>
+            <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses" disabled=@invalid>Clear</button>
+            <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing" disabled=@invalid>Calculate Path</button>
+        </div>
+        <br />
 
         <svg id='globe'></svg>
     </div>
@@ -74,6 +66,7 @@ else {
     private static TestLib comp;
     private Position position;
     private double decrement;
+    private string address;
     private bool updatesOn;
     private bool rendered;
     private int stepSpeed;    
@@ -96,6 +89,7 @@ else {
         invalid = true;
         stepSpeed = 5;
         threshold = 1;
+        address = "";
         comp = this;
         dist = 0;
     }
@@ -116,12 +110,22 @@ else {
 
     private async Task HandleValidPos()
     {
-        Position pose = new Position(rand.Next(0, 100000), position.name, position.lat, position.lon);
-        await JSRuntime.InvokeVoidAsync("addPosition", pose);
+        if (address.Length != 0)
+        {
+            position = await geocodeService.GetPos(address);
 
-        positions = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
-        invalid = positions.Count < 3;
-        this.StateHasChanged();
+            if (position != null)
+            {
+                Console.WriteLine(position);
+                Position pose = new Position(rand.Next(0, 100000), position.name, position.lat, position.lon);
+                await JSRuntime.InvokeVoidAsync("addPosition", pose);
+                address = "";
+
+                positions = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
+                invalid = positions.Count < 3;
+                this.StateHasChanged();
+            }
+        }
     }
 
     private async Task ClearPoses()
