@@ -1,4 +1,4 @@
-# Simulated Annealing Test Cases
+# Algorithm Test Cases
 
 ## How to Run
 
