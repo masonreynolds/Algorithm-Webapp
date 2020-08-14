@@ -1,11 +1,11 @@
 using System;
 
-namespace NQueens
+namespace SimAnnealing_NQueens
 {
     public class BoardState
     {
-        private int[] queens { get; set; }
-        private int boardSize { get; set; }
+        public int[] queens { get; set; }
+        public int boardSize { get; set; }
         public int heuristic { get; set; }
 
         public BoardState(int boardSize)

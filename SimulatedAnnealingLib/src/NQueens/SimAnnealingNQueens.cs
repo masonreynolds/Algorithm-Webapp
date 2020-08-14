@@ -1,37 +1,65 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace NQueens
+namespace SimAnnealing_NQueens
 {
-    static class SimAnnealingNQueens
+    public class SimAnnealingNQueens
     {
-        private static BoardState start { get; set; }
-        private static double threshold { get; set; }
-        private static double decrement { get; set; }
-        public static double seconds { get; set; }
-        public static int iteration { get; set; }
-        private static int maxTemp { get; set; }
-
-        public static BoardState startSimAnneal(BoardState start, int maxTemp, double  decrement, double threshold)
+        public struct simBoard
         {
-            SimAnnealingNQueens.threshold = threshold;
-            SimAnnealingNQueens.decrement = decrement;
-            SimAnnealingNQueens.maxTemp = maxTemp;
-            SimAnnealingNQueens.start = start;
+            public BoardState board;
+            public double temp;
+            public int iter;
 
-            BoardState solution = runSimAnneal(start);
+            public simBoard(BoardState board, double temp, int iter)
+            {
+                this.board = board;
+                this.temp = temp;
+                this.iter = iter;
+            }
+        }
+
+        private BoardState start { get; set; }
+        private double threshold { get; set; }
+        private double decrement { get; set; }
+        private int maxTemp { get; set; }
+
+        public static simBoard startSimAnneal(BoardState start, int maxTemp, double decrement, double threshold)
+        {
+            SimAnnealingNQueens sim = new SimAnnealingNQueens(start, maxTemp, decrement, threshold);
+
+            simBoard solution = sim.runSimAnneal(start).ToList()[^1];
 
             return solution;
         }
 
-        private static BoardState runSimAnneal(BoardState start)
+		public static IEnumerable<simBoard> run(BoardState start, int maxTemp, double decrement, double threshold)
+		{
+			SimAnnealingNQueens sim = new SimAnnealingNQueens(start, maxTemp, decrement, threshold);
+
+            var solution = sim.runSimAnneal(start);
+
+            return solution;
+		}
+
+        public SimAnnealingNQueens(BoardState start, int maxTemp, double decrement, double threshold)
+        {
+            this.threshold = threshold;
+            this.decrement = decrement;
+            this.maxTemp = maxTemp;
+            this.start = start;
+        }
+
+        private IEnumerable<simBoard> runSimAnneal(BoardState start)
         {
             BoardState currState = start;
             double temp = maxTemp;
-            iteration = 0;
+            int iteration = 0;
 
-            DateTime begin = DateTime.UtcNow;
+            yield return new simBoard(currState, temp, iteration);
 
-            while (temp >= threshold * maxTemp && currState.heuristic != 0)
+            while (temp >= threshold && currState.heuristic != 0)
             {
                 BoardState nextState = currState.generateRandomNeighbor();
                 int deltaEnergy = currState.heuristic - nextState.heuristic;
@@ -41,24 +69,16 @@ namespace NQueens
                 if (deltaEnergy >= 0)
                 {
                     currState = nextState;
+                    yield return new simBoard(currState, temp, iteration);
                 }
                 else if (Math.Exp(((double)deltaEnergy) / temp) < rand.NextDouble())
                 {
                     currState = nextState;
+                    yield return new simBoard(currState, temp, iteration);
                 }
 
                 temp *= decrement;
             }
-
-            if (currState.heuristic != 0)
-            {
-                iteration = int.MaxValue;
-            }
-
-            TimeSpan diff = DateTime.UtcNow - begin;
-            seconds = diff.TotalSeconds;
-
-            return currState;
         }
     }
 }

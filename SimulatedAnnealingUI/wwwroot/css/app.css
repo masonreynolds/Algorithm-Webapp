@@ -185,6 +185,16 @@ app {
         float: left;
         width: 50%;
     }
+
+    div.optionsCol {
+        float: left;
+        width: 50%;
+    }
+
+    div.displayCol {
+        float: left;
+        width: 50%;
+    }
       
     /* Clear floats after the columns */
     .row:after {
@@ -218,7 +228,7 @@ app {
     .slider {
         -webkit-appearance: none;  /* Override default CSS styles */
         appearance: none;
-        width: 50%; /* Full-width */
+        width: 80%; /* Full-width */
         height: 25px; /* Specified height */
         background: grey; /* Grey background */
         outline: none; /* Remove outline */

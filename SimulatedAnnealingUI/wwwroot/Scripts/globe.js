@@ -5,17 +5,17 @@ const projection = d3.geoOrthographic();
 const path = d3.geoPath().projection(projection);
 const center = [width/2 + offset, height/2];
 
-let config = {
+var config = {
     verticalTilt: 0,
     rotation: 0
 };
 
-let markerGroup = null;
-let positions = [];
-let timer = null;
-let links = [];
-let svg = null;
-let count = 0;
+var markerGroup = null;
+var positions = [];
+var timer = null;
+var links = [];
+var svg = null;
+var count = 0;
 
 function createGlobe() {
     svg = d3.select('#globe').attr('viewBox', [offset, 0, width, height]);

@@ -1,19 +1,19 @@
-﻿@page "/testlib"
+﻿@page "/SimAnneal"
 @inject IJSRuntime JSRuntime;
 @inject IGeocodeService geocodeService;
 
 @if (dist == 0) {
-    <h1>Test Graph Library</h1><br/>
+    <h1>Simulated Annealing</h1><br/>
 }
 else {
-    <h1>Test Graph Library - @dist kilometers - Temp: @temp</h1><br/>
+    <h1>Simulated Annealing - @dist kilometers - Temp: @temp</h1><br/>
 }
 
 <div class="row">
     <div class="column">
         <input type="text" placeholder="Enter address or city" class="textbox" @bind="@address" />
         <div class="mt-1">
-            <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos">Add</button>
+            <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos" disabled=@running>Add</button>
             <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses" disabled=@invalid>Clear</button>
             <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing" disabled=@invalid>Calculate Path</button>
         </div>
@@ -61,9 +61,9 @@ else {
 
 @code {
     private static List<Position> positions;
+    private static SimAnneal comp;
     private static bool invalid;
     private static bool running;
-    private static TestLib comp;
     private Position position;
     private double decrement;
     private string address;

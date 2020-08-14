@@ -101,7 +101,7 @@ namespace Graph
                 pos1 = positions[rand.Next(positions.Count)];
                 pos2 = positions[rand.Next(positions.Count)];
             }
-            while (pos2 == pos1 || pos1 == positions[0] || pos2 == positions[0]);
+            while (pos2 == pos1);
 
             for (int i = 0; i < neighbor.links.Count; i++)
             {

@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SimulatedAnnealingLib\Simulated_Annealing.csproj"/>
+    <ProjectReference Include="..\MinimaxLib\MinimaxLib.csproj"/>
   </ItemGroup>
 </Project>
