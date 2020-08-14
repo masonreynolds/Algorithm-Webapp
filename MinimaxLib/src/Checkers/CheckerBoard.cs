@@ -108,8 +108,8 @@ namespace Checkers_Minimax
                 heuristic += 2 * (12 - redPoses.Count);
                 heuristic -= 2 * (12 - blackPoses.Count);
 
-                heuristic += 10 * blackKings.Count;
-                heuristic -= 10 * redKings.Count;
+                heuristic += 5 * blackKings.Count;
+                heuristic -= 5 * redKings.Count;
 
                 this.heuristic = heuristic;
             }
