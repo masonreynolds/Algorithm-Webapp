@@ -1,12 +1,12 @@
-﻿@page "/SimAnneal"
+﻿@page "/TravelSalesman"
 @inject IJSRuntime JSRuntime;
 @inject IGeocodeService geocodeService;
 
 @if (dist == 0) {
-    <h1>Simulated Annealing</h1><br/>
+    <h1>Traveling Salesman</h1><br/>
 }
 else {
-    <h1>Simulated Annealing - @dist kilometers - Temp: @temp</h1><br/>
+    <h1>Traveling Salesman - @dist kilometers - Temp: @temp</h1><br/>
 }
 
 <div class="row">
@@ -61,7 +61,7 @@ else {
 
 @code {
     private static List<Position> positions;
-    private static SimAnneal comp;
+    private static TravelSalesman comp;
     private static bool invalid;
     private static bool running;
     private Position position;

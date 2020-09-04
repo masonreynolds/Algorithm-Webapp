@@ -70,7 +70,7 @@ function updateCheckers(b) {
                 d3.event.preventDefault();
                 board.blackPoses = board.blackPoses.filter(b => b[0] != pose[0] || b[1] != pose[1]);
                 board.blackKings = board.blackKings.filter(b => b[0] != pose[0] || b[1] != pose[1]);
-                DotNet.invokeMethod('SimulatedAnnealingUI', 'UpdateBoard', board);
+                DotNet.invokeMethod('SimulatedAnnealingUI', 'updateCheckers', board);
                 d3.event.target.remove();
             }
         });
@@ -116,7 +116,7 @@ function updateCheckers(b) {
                     }
 
                     this.onmousemove = null;
-                    DotNet.invokeMethod('SimulatedAnnealingUI', 'UpdateBoard', board);
+                    DotNet.invokeMethod('SimulatedAnnealingUI', 'updateCheckers', board);
                 };
             }
         });
@@ -143,7 +143,7 @@ function updateCheckers(b) {
                 d3.event.preventDefault();
                 board.blackPoses = board.blackPoses.filter(b => b[0] != pose[0] || b[1] != pose[1]);
                 board.blackKings = board.blackKings.filter(b => b[0] != pose[0] || b[1] != pose[1]);
-                DotNet.invokeMethod('SimulatedAnnealingUI', 'UpdateBoard', board);
+                DotNet.invokeMethod('SimulatedAnnealingUI', 'updateCheckers', board);
                 d3.event.target.remove();
             }
         });
@@ -181,7 +181,7 @@ function updateCheckers(b) {
                     event.target.setAttributeNS(null, "cy", pose[0] * fieldSize + (fieldSize/2));
 
                     this.onmousemove = null;
-                    DotNet.invokeMethod('SimulatedAnnealingUI', 'UpdateBoard', board);
+                    DotNet.invokeMethod('SimulatedAnnealingUI', 'updateCheckers', board);
                 };
             }
         });
