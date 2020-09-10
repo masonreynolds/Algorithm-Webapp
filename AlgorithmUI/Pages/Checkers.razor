@@ -1,0 +1,87 @@
+@page "/Checkers"
+@inject IJSRuntime JSRuntime;
+
+@if (states == 0) {
+    <h1 class="text">Minimax Checkers AI</h1><br/>
+}
+else {
+    <h1 class="text">Minimax Checkers AI - @states States Generated</h1><br/>
+}
+
+<div class="row">
+    <div class="displayCol">
+        <div id="table"></div>
+    </div>
+    <div class="optionsCol">
+        <h5 class="text">Number of Future Moves to Generate: @depth</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="5" class="slider" id="myRange" @bind="depth" @bind:event="oninput">
+        </div>
+        <br />
+        <button type="button" class="btn btn-primary mr-2" @onclick="runMinimax">Submit Move</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="resetBoard">Reset Board</button>
+        <button type="button" class="btn btn-primary mr-2" @onclick="undoMove">Undo Move</button>
+    </div>
+</div>
+
+
+
+@code {
+    private static List<CheckerBoard> boards;
+    private int states;
+    private int depth;
+
+    protected override void OnInitialized()
+    {
+        boards = new List<CheckerBoard>();
+        boards.Add(new CheckerBoard());
+        depth = 3;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("drawCheckersBoard");
+            await JSRuntime.InvokeVoidAsync("updateCheckers", boards[^1]);
+        }
+    }
+
+    private async Task undoMove()
+    {
+        if (boards.Count > 1)
+        {  
+            boards.Remove(boards[^1]);
+            states = 0;
+            this.StateHasChanged();
+
+            await JSRuntime.InvokeVoidAsync("updateCheckers", boards[^1]);
+        }
+    }
+
+    private async Task resetBoard()
+    {
+        boards.Clear();
+        boards.Add(new CheckerBoard());
+        states = 0;
+        this.StateHasChanged();
+
+        await JSRuntime.InvokeVoidAsync("updateCheckers", boards[^1]);
+    }
+
+    private async Task runMinimax()
+    {
+        var result = Minimax.startMinimax(boards[^1], depth);
+        boards.Add(result.board);
+        states = result.states;
+        this.StateHasChanged();
+
+        await JSRuntime.InvokeVoidAsync("updateCheckers", boards[^1]);
+    }
+
+    [JSInvokable]
+    public static void updateCheckers(CheckerBoard b)
+    {
+        boards.Add(b);
+    }
+}
