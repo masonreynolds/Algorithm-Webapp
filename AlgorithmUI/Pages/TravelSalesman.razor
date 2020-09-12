@@ -1,0 +1,179 @@
+﻿@page "/TravelSalesman"
+@inject IJSRuntime JSRuntime;
+@inject IGeocodeService geocodeService;
+
+@if (dist == 0) {
+    <h1 class="text">Traveling Salesman</h1><br/>
+}
+else {
+    <h1 class="text">Traveling Salesman - @dist kilometers - Temp: @temp</h1><br/>
+}
+
+<div class="row">
+    <div class="column">
+        <input type="text" placeholder="Enter address or city" class="textbox" @bind="@address" />
+        <div class="mt-1">
+            <button type="button" class="btn btn-primary mr-2" @onclick="HandleValidPos" disabled=@running>Add</button>
+            <button type="button" class="btn btn-primary mr-2" @onclick="ClearPoses" disabled=@invalid>Clear</button>
+            <button type="button" class="btn btn-primary mr-2" @onclick="runSimAnnealing" disabled=@invalid>Calculate Path</button>
+        </div>
+        <br />
+
+        <svg id='globe'></svg>
+    </div>
+    <div class="column" id="c2">
+        <h5 class="text">Step Speed: @stepSpeed</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="1000" class="slider" id="myRange" @bind="stepSpeed" @bind:event="oninput">
+        </div>
+        <br />
+        <h5 class="text">Max Temperature: @maxTemp</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="100000" class="slider" id="myRange" @bind="maxTemp" @bind:event="oninput">
+        </div>
+        <br />
+        <h5 class="text">Decrement per Step: @decrement</h5>
+        <div class="slidecontainer">
+            <input type="range" min="0.0001" max="0.9999" step="0.0001" class="slider" id="myRange" @bind="decrement" @bind:event="oninput">
+        </div>
+        <br />
+        <h5 class="text">Threshold: @threshold</h5>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="@maxTemp" class="slider" id="myRange" @bind="threshold" @bind:event="oninput">
+        </div>
+        <br />
+        <button type="button" class="btn btn-primary mr-2" disabled=@running @onclick="switchSteps">Turn On/Off Updates</button>
+        <br /><br />
+        <h5 class="text">Locations entered: </h5>
+        @if (positions.Count == 0) {
+            <p id="locations" class="text" style="white-space: pre-wrap">None so far</p>
+        } else {
+            <ul>
+                @foreach (var pose in positions) {
+                    <li class="text" key=@position.ID>
+                        <b>@pose.name</b>: @pose.lat, @pose.lon
+                    </li>
+                }
+            </ul>
+        }
+  </div>
+</div>
+
+@code {
+    private static List<Position> positions;
+    private static TravelSalesman comp;
+    private static bool invalid;
+    private static bool running;
+    private Position position;
+    private double decrement;
+    private string address;
+    private bool updatesOn;
+    private bool rendered;
+    private int stepSpeed;    
+    private int threshold;
+    private int maxTemp;
+    private Random rand;
+    private double temp;
+    private int dist;
+    
+    protected override void OnInitialized()
+    {
+        positions = new List<Position>();
+        position = new Position();
+        rand = new Random();
+        updatesOn = false;
+        decrement = 0.999;
+        rendered = false;
+        maxTemp = 10000;
+        running = false;
+        invalid = true;
+        stepSpeed = 5;
+        threshold = 1;
+        address = "";
+        comp = this;
+        dist = 0;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await DisplayGlobe();
+    }
+
+    private async Task DisplayGlobe()
+    {
+        if (!rendered)
+        {
+            rendered = true;
+            await JSRuntime.InvokeVoidAsync("createGlobe");
+        }
+    }
+
+    private async Task HandleValidPos()
+    {
+        if (address.Length != 0)
+        {
+            position = await geocodeService.GetPos(address);
+
+            if (position != null)
+            {
+                Console.WriteLine(position);
+                Position pose = new Position(rand.Next(0, 100000), position.name, position.lat, position.lon);
+                await JSRuntime.InvokeVoidAsync("addPosition", pose);
+                address = "";
+
+                positions = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
+                invalid = positions.Count < 3;
+                this.StateHasChanged();
+            }
+        }
+    }
+
+    private async Task ClearPoses()
+    {
+        invalid = true;
+        comp.StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("clearPoses");
+    }
+
+    private void switchSteps(MouseEventArgs e)
+    {
+        updatesOn = !updatesOn;
+    }
+
+    private async Task runSimAnnealing()
+    {
+        running = true;
+        List<Position> poses = await JSRuntime.InvokeAsync<List<Position>>("getPoses");
+        WeightedGraph graph = new WeightedGraph(poses);
+        IEnumerable<SimAnnealingGraph.annealResult> solutionSteps = SimAnnealingGraph.Run(graph, maxTemp, decrement, threshold);
+
+        if (updatesOn)
+        {
+            foreach (var step in solutionSteps)
+            {
+                await JSRuntime.InvokeVoidAsync("updateGlobe", step.state.positions, step.state.links);
+                dist = (int)step.state.distance;
+                temp = Math.Round(step.temp, 2);
+                await Task.Delay(stepSpeed);
+            }
+        }
+        else
+        {
+            SimAnnealingGraph.annealResult step = solutionSteps.Last();
+            await JSRuntime.InvokeVoidAsync("updateGlobe", step.state.positions, step.state.links);
+            dist = (int)step.state.distance;
+            temp = Math.Round(step.temp, 2);
+        }
+
+        running = false;
+        invalid = false;
+    }
+
+    [JSInvokable]
+    public static void UpdatePoses(List<Position> poses)
+    {
+        positions = poses;
+        invalid = positions.Count < 3 || running;
+        comp.StateHasChanged();
+    }
+}
