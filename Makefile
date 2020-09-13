@@ -1,4 +1,4 @@
-.PHONY: run-local build
+.PHONY: run-local build run-build build-and-run
 
 build:
 	rm -rf build
