@@ -1,11 +1,48 @@
 # Algorithm Test Cases
 
-## How to Run
+This repository houses a Blazor web application, which showcases implementations of artificial intelligence (AI) algorithms. This repository hosts the software's source code as well as the built, deployed web application, accomplished with GitHub Actions and GitHub pages.
 
-To run the program, make sure you have .NET Core 3.1 installed. You can run `dotnet run` to run the program. This will implicitly run `dotnet restore` and `dotnet build` before running `dotnet run`. Keep in mind that this will create `bin/` and `obj/` directories. 
-  
-The easiest way to run/edit/debug this application is by using Visual Studio Code. When you open the project is VSCode, it will prompt you to add required assets to the project. This will generate a `.vscode` folder with `launch.json` and `tasks.json` files that allow one to debug the program. 
+## Prerequisite Software
 
-## Making Changes
+- [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.0) (Required)
+- [Docker](https://www.docker.com/get-started) (Required to run local build)
 
-For this project, changes can simply be push to the master branch, as there is only one version of the project at any given time. Before making any changes, pull the most recent version from the remote repository and push when the changes are finished.
+## Local Development
+
+To run the Blazor development server, run
+
+```bash
+make run-local
+```
+
+To build locally, run
+
+```bash
+make build
+```
+
+and to run the build, run
+
+```bash
+make run-build
+```
+
+Alternatively, you can create a build and run it in one step by running
+
+```bash
+make build-and-run
+```
+
+Note that `make run-build` and `make build-and-run` require a Docker installation.
+
+## Branching
+
+This repository contains three main branches:
+
+- `master` - Main version of the repository
+- `development` - Working version of the repository
+- `gh-pages` - Built and deployed web application
+
+To make changes, create a feature branch off of `development` and make pull requests to `development`. When you are ready to make a release, make a pull request from `development` to `master`.
+
+A push or merge to `master` will automatically trigger a GitHub Action, which creates a build of the application and deploys that build to the `gh-pages` branch. This branch is hosted with GitHub pages.
