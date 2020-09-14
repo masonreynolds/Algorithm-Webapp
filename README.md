@@ -9,7 +9,7 @@ This repository houses a Blazor web application, which showcases implementations
 
 ## Local Development
 
-To run the Blazor development server, run
+To run the Blazor development server, run the following command and navigate to [http://localhost:5000/Algorithm-Webapp](http://localhost:5000/Algorithm-Webapp)
 
 ```bash
 make run-local
@@ -21,13 +21,13 @@ To build locally, run
 make build
 ```
 
-and to run the build, run
+and to run the build, run the following command and navigate to [http://localhost:8080/Algorithm-Webapp](http://localhost:8080/Algorithm-Webapp).
 
 ```bash
 make run-build
 ```
 
-Alternatively, you can create a build and run it in one step by running
+Alternatively, you can create a build and run it in one step by running the following command and navigating to [http://localhost:8080/Algorithm-Webapp](http://localhost:8080/Algorithm-Webapp).
 
 ```bash
 make build-and-run
