@@ -4,7 +4,7 @@ This repository houses a Blazor web application, which showcases implementations
 
 ## Prerequisite Software
 
-- [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.0) (Required)
+- [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) (Required)
 - [Docker](https://www.docker.com/get-started) (Required to run local build)
 
 ## Local Development
@@ -35,7 +35,7 @@ make build-and-run
 
 Note that `make run-build` and `make build-and-run` require a Docker installation.
 
-## Branching
+## Branching, Changes, and Deployment
 
 This repository contains three main branches:
 
